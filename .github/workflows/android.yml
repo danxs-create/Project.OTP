@@ -15,7 +15,7 @@ jobs:
           ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" -type f | head -n 1)
 
           if [ -z "$ZIP_FILE" ]; then
-            echo "ERROR: File zip gak ketemu!"
+            echo "ERROR: File ZIP tidak ditemukan!"
             ls -la
             exit 1
           fi
@@ -27,40 +27,29 @@ jobs:
           GRADLEW_PATH=$(find ./project -name "gradlew" -type f | head -n 1)
 
           if [ -z "$GRADLEW_PATH" ]; then
-            echo "ERROR: gradlew gak ketemu!"
+            echo "ERROR: gradlew tidak ditemukan!"
             exit 1
           fi
 
           REAL_DIR=$(dirname "$GRADLEW_PATH")
           echo "PROJECT_DIR=$REAL_DIR" >> $GITHUB_ENV
 
-      - name: Setup Java
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      - name: Debug Wrapper
-        run: |
-          cd ${{ env.PROJECT_DIR }}
-
-          echo "=== PROJECT DIR ==="
-          pwd
-
-          echo "=== Isi gradle/wrapper ==="
-          ls -la gradle/wrapper/
-
-          echo "=== Info gradle-wrapper.jar ==="
-          file gradle/wrapper/gradle-wrapper.jar || true
-
-          echo "=== Isi JAR (20 baris pertama) ==="
-          jar tf gradle/wrapper/gradle-wrapper.jar | head -20 || true
-
       - name: Build APK
         run: |
           cd ${{ env.PROJECT_DIR }}
 
+          echo "=== Lokasi Project ==="
+          pwd
+
           chmod +x gradlew
+
+          ./gradlew --version
 
           ./gradlew assembleDebug --stacktrace
 
