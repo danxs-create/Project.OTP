@@ -1,24 +1,71 @@
-- name: Debug Wrapper
-  run: |
-    cd ${{ env.PROJECT_DIR }}
+name: Build APK
 
-    echo "=== PROJECT DIR ==="
-    pwd
+on:
+  workflow_dispatch:
 
-    echo "=== Isi gradle/wrapper ==="
-    ls -la gradle/wrapper/
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-    echo "=== Info gradle-wrapper.jar ==="
-    file gradle/wrapper/gradle-wrapper.jar || true
+    steps:
+      - uses: actions/checkout@v4
 
-    echo "=== Isi JAR (20 baris pertama) ==="
-    jar tf gradle/wrapper/gradle-wrapper.jar | head -20 || true
+      - name: Cari & Extract Project
+        run: |
+          ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" -type f | head -n 1)
 
-- name: Build APK
-  run: |
-    cd ${{ env.PROJECT_DIR }}
+          if [ -z "$ZIP_FILE" ]; then
+            echo "ERROR: File zip gak ketemu!"
+            ls -la
+            exit 1
+          fi
 
-    chmod +x gradlew
+          rm -rf project
+          mkdir project
+          unzip -o "$ZIP_FILE" -d project
 
-    echo "=== Build APK ==="
-    ./gradlew assembleDebug --stacktrace
+          GRADLEW_PATH=$(find ./project -name "gradlew" -type f | head -n 1)
+
+          if [ -z "$GRADLEW_PATH" ]; then
+            echo "ERROR: gradlew gak ketemu!"
+            exit 1
+          fi
+
+          REAL_DIR=$(dirname "$GRADLEW_PATH")
+          echo "PROJECT_DIR=$REAL_DIR" >> $GITHUB_ENV
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Debug Wrapper
+        run: |
+          cd ${{ env.PROJECT_DIR }}
+
+          echo "=== PROJECT DIR ==="
+          pwd
+
+          echo "=== Isi gradle/wrapper ==="
+          ls -la gradle/wrapper/
+
+          echo "=== Info gradle-wrapper.jar ==="
+          file gradle/wrapper/gradle-wrapper.jar || true
+
+          echo "=== Isi JAR (20 baris pertama) ==="
+          jar tf gradle/wrapper/gradle-wrapper.jar | head -20 || true
+
+      - name: Build APK
+        run: |
+          cd ${{ env.PROJECT_DIR }}
+
+          chmod +x gradlew
+
+          ./gradlew assembleDebug --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Debug-APK
+          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
