@@ -1,31 +1,24 @@
-name: Build APK
+- name: Debug Wrapper
+  run: |
+    cd ${{ env.PROJECT_DIR }}
 
-on:
-  workflow_dispatch:
+    echo "=== PROJECT DIR ==="
+    pwd
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+    echo "=== Isi gradle/wrapper ==="
+    ls -la gradle/wrapper/
 
-    steps:
-      - uses: actions/checkout@v4
+    echo "=== Info gradle-wrapper.jar ==="
+    file gradle/wrapper/gradle-wrapper.jar || true
 
-      - name: Extract Project
-        run: unzip project.zip
+    echo "=== Isi JAR (20 baris pertama) ==="
+    jar tf gradle/wrapper/gradle-wrapper.jar | head -20 || true
 
-      - name: Setup Java 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
+- name: Build APK
+  run: |
+    cd ${{ env.PROJECT_DIR }}
 
-      - name: Build Debug APK
-        run: |
-          chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
+    chmod +x gradlew
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+    echo "=== Build APK ==="
+    ./gradlew assembleDebug --stacktrace
