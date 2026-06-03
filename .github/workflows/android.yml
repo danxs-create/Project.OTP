@@ -10,9 +10,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Extract ZIP
+      - name: Cari & Extract Project
         run: |
-          unzip project.zip -d project
+          # Cari file zip apapun di repo
+          ZIP_FILE=$(find . -name "*.zip" -type f | head -n 1)
+          
+          if [ -z "$ZIP_FILE" ]; then
+            echo "ERROR: Tidak ditemukan file .zip di repository!"
+            ls -la
+            exit 1
+          fi
+          
+          echo "Menemukan file: $ZIP_FILE"
+          unzip -o "$ZIP_FILE" -d extracted_project
+          
+          # Cari lokasi gradlew setelah extract
+          GRADLEW_PATH=$(find ./extracted_project -name "gradlew" -type f | head -n 1)
+          
+          if [ -z "$GRADLEW_PATH" ]; then
+            echo "ERROR: File gradlew tidak ditemukan di dalam zip!"
+            find ./extracted_project -type f | head -20
+            exit 1
+          fi
+          
+          GRADLE_DIR=$(dirname "$GRADLEW_PATH")
+          echo "PROJECT_DIR=$GRADLE_DIR" >> $GITHUB_ENV
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -20,14 +42,14 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Build
+      - name: Build APK
         run: |
-          cd project
+          cd ${{ env.PROJECT_DIR }}
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: APK
-          path: project/app/build/outputs/apk/debug/*.apk
+          name: Debug-APK
+          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
