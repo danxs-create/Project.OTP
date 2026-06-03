@@ -10,51 +10,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Cari & Extract Project
-        run: |
-          ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" -type f | head -n 1)
-          if [ -z "$ZIP_FILE" ]; then
-            echo "ERROR: File zip gak ketemu!"
-            ls -la
-            exit 1
-          fi
-          
-          rm -rf project
-          mkdir project
-          unzip -o "$ZIP_FILE" -d project
-          
-          GRADLEW_PATH=$(find ./project -name "gradlew" -type f | head -n 1)
-          if [ -z "$GRADLEW_PATH" ]; then
-            echo "ERROR: gradlew gak ketemu di dalam zip!"
-            find ./project -type f | head -20
-            exit 1
-          fi
-          
-          REAL_DIR=$(dirname "$GRADLEW_PATH")
-          echo "PROJECT_DIR=$REAL_DIR" >> $GITHUB_ENV
+      - name: Extract Project
+        run: unzip project.zip
 
-      - name: Setup Java
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      - name: Fix Gradle Wrapper & Build
+      - name: Build
         run: |
-          cd ${{ env.PROJECT_DIR }}
-          
-          WRAPPER_JAR="gradle/wrapper/gradle-wrapper.jar"
-          if [ ! -f "$WRAPPER_JAR" ] || ! jar tf "$WRAPPER_JAR" &>/dev/null; then
-            echo "Wrapper rusak/hilang, download v8.2..."
-            mkdir -p gradle/wrapper
-            curl -L https://raw.githubusercontent.com/gradle/gradle/v8.2.0/gradle/wrapper/gradle-wrapper.jar -o "$WRAPPER_JAR"
-          fi
-          
           chmod +x gradlew
           ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Debug-APK
-          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
+          name: apk
+          path: app/build/outputs/apk/debug/*.apk
