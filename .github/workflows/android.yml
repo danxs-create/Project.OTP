@@ -1,46 +1,52 @@
 name: Build APK
-on: workflow_dispatch:
-jobs: build: runs-on: ubuntu-latest
-steps:
-  - uses: actions/checkout@v4
 
-  - name: Extract Project
-    run: |
-      ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
+on:
+  workflow_dispatch:
 
-      if [ -z "$ZIP_FILE" ]; then
-        echo "ZIP tidak ditemukan"
-        exit 1
-      fi
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-      rm -rf project
-      mkdir project
-      unzip -o "$ZIP_FILE" -d project
+    steps:
+      - uses: actions/checkout@v4
 
-  - name: Show Manifest
-    run: |
-      echo "===== MANIFEST ====="
-      cat project/app/src/main/AndroidManifest.xml || true
+      - name: Extract Project
+        run: |
+          ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
 
-  - name: Show Strings
-    run: |
-      echo "===== STRINGS ====="
-      cat project/app/src/main/res/values/strings.xml || true
+          if [ -z "$ZIP_FILE" ]; then
+            echo "ZIP tidak ditemukan"
+            exit 1
+          fi
 
-  - name: Setup Java
-    uses: actions/setup-java@v4
-    with:
-      distribution: temurin
-      java-version: 17
+          rm -rf project
+          mkdir project
+          unzip -o "$ZIP_FILE" -d project
 
-  - name: Build APK
-    run: |
-      cd project
-      chmod +x gradlew
-      ./gradlew assembleDebug --stacktrace --info
+      - name: Show Manifest
+        run: |
+          echo "===== MANIFEST ====="
+          cat project/app/src/main/AndroidManifest.xml || true
 
-  - name: Upload APK
-    uses: actions/upload-artifact@v4
-    with:
-      name: Debug-APK
-      path: project/app/build/outputs/apk/debug/*.apk
+      - name: Show Strings
+        run: |
+          echo "===== STRINGS ====="
+          cat project/app/src/main/res/values/strings.xml || true
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build APK
+        run: |
+          cd project
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace --info
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Debug-APK
+          path: project/app/build/outputs/apk/debug/*.apk
